@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Husk Plan Selector Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 30px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #6a0dad;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    .row input, .row select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 180px;
+    }
+    .row button.remove-btn {
+      background-color: #e63946;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .row button.remove-btn:hover {
+      background-color: #c92332;
+    }
+    button {
+      padding: 10px 15px;
+      margin-top: 10px;
+      margin-right: 10px;
+      background-color: #6a0dad;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #580a9e;
+    }
+    .output {
+      margin-top: 30px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 12px;
+      text-align: center;
+    }
+    th {
+      background-color: #800080;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Husk Plan Selector Tool</h2>
+<div id="appliances"></div>
+<button onclick="addRow()">Add Appliance</button>
+<button onclick="calculate()">Calculate Hours</button>
+
+<div class="output" id="results"></div>
+
+<script>
+const applianceData = {
+  "Air Cooler": { watt: 150, unit: 0.15 },
+  "LED Bulb-12W": { watt: 12, unit: 0.012 },
+  "LED Bulb-15W": { watt: 15, unit: 0.015 },
+  "LED Bulb-20W": { watt: 20, unit: 0.02 },
+  "Tube Light": { watt: 25, unit: 0.025 },
+  "LED striplights": { watt: 50, unit: 0.05 },
+  "Ceiling Fan": { watt: 100, unit: 0.1 },
+  "Wall Fan": { watt: 75, unit: 0.075 },
+  "Pedestal Stand Fan": { watt: 125, unit: 0.125 },
+  "AC (1 Ton)": { watt: 1300, unit: 1.3 },
+  "Fridge": { watt: 200, unit: 0.2 },
+  "Deep Freezer": { watt: 300, unit: 0.3 },
+  "Mixer Grinder": { watt: 1200, unit: 1.2 },
+  "Display TVs": { watt: 120, unit: 0.12 },
+  "Computer": { watt: 200, unit: 0.2 },
+  "Xerox Machine": { watt: 1000, unit: 1 },
+  "Drill Machine": { watt: 600, unit: 0.6 },
+  "Metal Cutter": { watt: 1800, unit: 1.8 },
+  "Cutting machines": { watt: 2000, unit: 2 },
+  "Drilling & fastening machines": { watt: 800, unit: 0.8 },
+  "Finishing machines": { watt: 1200, unit: 1.2 }
+};
+
+const plans = [
+  { name: "Lite 50", units: 7.5, maxWattage: 50 },
+  { name: "Glow 100", units: 8.0, maxWattage: 100 },
+  { name: "Shine 150", units: 10.0, maxWattage: 150 },
+  { name: "Active 200", units: 14.0, maxWattage: 200 },
+  { name: "Reliable 300", units: 21.0, maxWattage: 300 },
+  { name: "Durable 500", units: 23.3, maxWattage: 500 },
+  { name: "Growth 1000", units: 25.6, maxWattage: 1000 },
+  { name: "Prime 1500", units: 30.3, maxWattage: 1500 },
+  { name: "Elite 2000", units: 30.1, maxWattage: 2000 },
+  { name: "Turbo 5500", units: 34.1, maxWattage: 5500 },
+  { name: "Business", units: 38.1, maxWattage: 10000 },
+  { name: "Supreme", units: 46.2, maxWattage: 12000 },
+  { name: "Ultra", units: 56.2, maxWattage: 15000 },
+  { name: "Infinity", units: 84.3, maxWattage: 20000 }
+];
+
+function addRow() {
+  const container = document.getElementById('appliances');
+  if (container.children.length >= 10) return;
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.innerHTML = `
+    <select>
+      ${Object.keys(applianceData).map(appliance => `<option value="${appliance}">${appliance}</option>`).join('')}
+    </select>
+    <input type="number" placeholder="Quantity" min="1" value="1" />
+    <button class="remove-btn" onclick="removeRow(this)">Remove</button>
+  `;
+  container.appendChild(row);
+}
+
+function removeRow(button) {
+  const row = button.parentNode;
+  row.remove();
+}
+
+function calculate() {
+  const rows = document.querySelectorAll('#appliances .row');
+  let totalLoad = 0;
+  let totalWattage = 0;
+
+  rows.forEach(row => {
+    const appliance = row.querySelector('select').value;
+    const quantity = parseInt(row.querySelector('input').value) || 0;
+    totalLoad += applianceData[appliance].unit * quantity;
+    totalWattage += applianceData[appliance].watt * quantity;
+  });
+
+  const output = plans
+    .filter(plan => totalWattage <= plan.maxWattage)
+    .map(plan => {
+      const hours = (plan.units / totalLoad).toFixed(2);
+      return `<tr><td>${plan.name}</td><td>${hours}</td></tr>`;
+    })
+    .join('');
+
+  document.getElementById('results').innerHTML = `
+    <h3>Estimated Hours of Backup:</h3>
+    <table>
+      <tr><th>Plan</th><th>Estimated Hours</th></tr>
+      ${output || '<tr><td colspan="2">No suitable plan found</td></tr>'}
+    </table>
+  `;
+}
+
+// Add first row by default
+addRow();
+</script>
+
+</body>
+</html>
